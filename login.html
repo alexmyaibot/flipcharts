@@ -66,12 +66,13 @@
     <div class="error" id="err">Incorrect password</div>
 </div>
 <script>
-    const dest = new URLSearchParams(location.search).get('from') || '/';}
-    if (sessionStorage.getItem('fc_auth') === 'ok') window.location.href = dest;
+    if (localStorage.getItem('fc_auth') === 'ok') {
+        window.location.href = '/';
+    }
     function unlock() {
         if (btoa(document.getElementById('pw').value) === 'Y2MzZHh5eg==') {
-            sessionStorage.setItem('fc_auth', 'ok');
-            window.location.href = dest;
+            localStorage.setItem('fc_auth', 'ok');
+            window.location.href = '/';
         } else {
             document.getElementById('err').style.display = 'block';
             document.getElementById('pw').value = '';
