@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Primary Flipcharts — Free Demo</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { background: #000; font-family: 'Georgia', serif; overflow: hidden; height: 100vh; width: 100vw; }
+
+        .demo-banner {
+            position: fixed; top: 0; left: 0; right: 0; z-index: 300;
+            background: linear-gradient(135deg, #a78bfa, #f8a5c2);
+            color: white; text-align: center;
+            padding: 8px 16px; font-family: -apple-system, sans-serif;
+            font-size: 0.85rem; font-weight: 600;
+            display: flex; align-items: center; justify-content: center; gap: 12px;
+        }
+        .demo-banner a {
+            color: white; background: rgba(255,255,255,0.25);
+            padding: 3px 10px; border-radius: 20px;
+            text-decoration: none; font-size: 0.8rem; white-space: nowrap;
+        }
+
+        .aspect-wrapper {
+            position: fixed; top: 34px; left: 0;
+            width: 100vw; height: calc(100vh - 34px);
+            display: flex; align-items: center; justify-content: center; background: #000;
+        }
+        .screen {
+            position: relative;
+            width: min(100vw, 177.78vh);
+            height: min(calc(100vh - 34px), 56.25vw);
+            background: #1a0a2e; overflow: hidden;
+        }
+        .slideshow { width: 100%; height: 100%; position: relative; }
+        .slide { display: none; position: absolute; inset: 0; }
+        .slide.active { display: flex; flex-direction: column; }
+        .slide-bg {
+            position: absolute; inset: 0;
+            background-size: cover; background-position: center;
+            filter: brightness(0.4); z-index: 0;
+        }
+        .slide-content {
+            position: relative; z-index: 1;
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            height: 100%; padding: 40px 60px 100px; text-align: center;
+        }
+        .slide-section {
+            font-size: 0.8rem; letter-spacing: 3px;
+            text-transform: uppercase; color: rgba(255,107,53,0.8); margin-bottom: 24px;
+        }
+        .slide-line {
+            font-size: clamp(1.8rem, 5.5vw, 3.2rem); font-weight: 700;
+            color: #fff; line-height: 1.5;
+            text-shadow: 0 3px 25px rgba(0,0,0,0.9), 0 1px 8px rgba(0,0,0,1);
+            max-width: 850px;
+        }
+        .slide-line.keywords { font-size: clamp(2.4rem, 8vw, 5rem); color: #ff6b35; }
+
+        /* Guess mode */
+        #slideshow.photo-mode .slide-line,
+        #slideshow.photo-mode .slide-section { opacity: 0 !important; }
+        #slideshow.photo-mode .slide-bg { filter: brightness(0.85) !important; }
+
+        .title-main {
+            font-size: clamp(2.5rem, 7vw, 5rem); font-weight: bold; color: #fff;
+            text-shadow: 0 4px 30px rgba(0,0,0,0.9); margin-bottom: 12px;
+        }
+        .title-sub { font-size: clamp(1rem, 2.5vw, 1.4rem); color: rgba(255,255,255,0.65); letter-spacing: 2px; margin-bottom: 20px; }
+        .demo-label {
+            background: rgba(255,107,53,0.2); border: 1px solid rgba(255,107,53,0.5);
+            color: #ff6b35; padding: 6px 18px; border-radius: 20px;
+            font-size: 0.85rem; font-family: -apple-system, sans-serif;
+        }
+
+        .nav {
+            position: fixed; bottom: 0;
+            left: 50%; transform: translateX(-50%);
+            width: min(100vw, 177.78vh); z-index: 100;
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 14px 24px; background: rgba(0,0,0,0.6); backdrop-filter: blur(8px);
+        }
+        .nav-btn {
+            background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.25);
+            color: white; padding: 10px 28px; border-radius: 30px; font-size: 1rem;
+            cursor: pointer; font-family: Georgia, serif; -webkit-tap-highlight-color: transparent;
+        }
+        .nav-btn:active { background: rgba(255,255,255,0.3); transform: scale(0.97); }
+        .nav-btn:disabled { opacity: 0.25; cursor: default; }
+        .nav-center { text-align: center; }
+        .nav-counter { color: rgba(255,255,255,0.6); font-size: 0.85rem; }
+        .nav-hint { color: rgba(255,255,255,0.35); font-size: 0.75rem; margin-top: 3px; }
+
+        .mode-toggle {
+            position: fixed; top: 48px;
+            right: calc(50% - min(50vw, 88.89vh) + 14px);
+            z-index: 100;
+        }
+        .mode-btn {
+            background: rgba(0,0,0,0.55); border: 1px solid rgba(255,255,255,0.3);
+            color: white; padding: 7px 14px; border-radius: 20px; font-size: 0.85rem;
+            cursor: pointer; -webkit-tap-highlight-color: transparent;
+        }
+        .mode-btn:active { transform: scale(0.95); }
+
+        .progress-bar {
+            position: fixed; top: 34px; left: 50%; transform: translateX(-50%);
+            height: 3px; background: #ff6b35; transition: width 0.3s ease;
+            z-index: 200; max-width: min(100vw, 177.78vh);
+        }
+
+        @media (max-width: 768px) {
+            .slide-content { padding: 30px 30px 90px; }
+            .slide-line { font-size: clamp(1.5rem, 6.5vw, 2.5rem); }
+            .nav-btn { padding: 8px 20px; font-size: 0.9rem; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="demo-banner">
+    🎵 Free Demo · David &amp; Goliath
+    <a href="https://forms.gle/JMFa7vyC1g2VNaUV7" target="_blank">Stay Updated →</a>
+</div>
+
+<div class="progress-bar" id="progressBar" style="width:25%"></div>
+
+<div class="mode-toggle">
+    <button class="mode-btn" id="modeBtn" onclick="cycleMode()">📝 Lyrics</button>
+</div>
+
+<div class="aspect-wrapper"><div class="screen"><div class="slideshow" id="slideshow">
+
+    <!-- TITLE -->
+    <div class="slide active" data-type="title">
+        <div class="slide-bg" style="background-image: url('david-and-goliath/images/title.jpg')"></div>
+        <div class="slide-content">
+            <div class="title-main">David &amp; Goliath</div>
+            <div class="title-sub">Shawna Edwards · Primary</div>
+            <div class="demo-label">🎬 Demo · Click Next to get started →</div>
+        </div>
+    </div>
+
+    <!-- SLIDE 2 -->
+    <div class="slide"
+        data-section="Verse 1"
+        data-full="He offered to defend the land with pebbles and a sling"
+        data-key="PEBBLES & SLING">
+        <div class="slide-bg" style="background-image: url('david-and-goliath/images/verse1b.jpg')"></div>
+        <div class="slide-content">
+            <div class="slide-section">Verse 1</div>
+            <div class="slide-line"></div>
+            <div style="margin-top: 24px; background: rgba(255,107,53,0.2); border: 1px solid rgba(255,107,53,0.5); border-radius: 12px; padding: 10px 18px; font-family: -apple-system, sans-serif; font-size: 0.85rem; color: rgba(255,255,255,0.85);">
+                👆 Explore the 4 teaching modes — tap the button in the top right!
+            </div>
+        </div>
+    </div>
+
+    <!-- SLIDE 3 -->
+    <div class="slide"
+        data-section="Verse 2"
+        data-full="For faith was David's sword that day, and courage was his shield"
+        data-key="FAITH · COURAGE">
+        <div class="slide-bg" style="background-image: url('david-and-goliath/images/verse2b.jpg')"></div>
+        <div class="slide-content"><div class="slide-section">Verse 2</div><div class="slide-line"></div></div>
+    </div>
+
+    <!-- SLIDE 4 -->
+    <div class="slide"
+        data-section="Chorus"
+        data-full="David came in the name of the Lord!"
+        data-key="NAME OF THE LORD">
+        <div class="slide-bg" style="background-image: url('david-and-goliath/images/chorus.jpg')"></div>
+        <div class="slide-content"><div class="slide-section">Chorus</div><div class="slide-line"></div></div>
+    </div>
+
+</div></div></div>
+
+<div class="nav">
+    <button class="nav-btn" id="prevBtn" onclick="changeSlide(-1)" disabled>← Back</button>
+    <div class="nav-center">
+        <div class="nav-counter" id="counter">1 / 4</div>
+        <div class="nav-hint">👆 Try the mode button top right!</div>
+    </div>
+    <button class="nav-btn" id="nextBtn" onclick="changeSlide(1)">Next →</button>
+</div>
+
+<script>
+    let current = 0, mode = 'full';
+    const slides = document.querySelectorAll('.slide');
+    const total = slides.length;
+    const modeOrder = ['full', 'guess', 'keywords', 'photo'];
+    const modeLabels = {'full':'📝 Lyrics','guess':'❓ Guess','keywords':'🔑 Keywords','photo':'📷 Photo'};
+
+    function cycleMode() {
+        const idx = modeOrder.indexOf(mode);
+        mode = modeOrder[(idx + 1) % modeOrder.length];
+        document.getElementById('modeBtn').textContent = modeLabels[mode];
+        document.getElementById('slideshow').classList.toggle('photo-mode', mode === 'photo');
+        updateSlideContent();
+    }
+
+    function updateSlideContent() {
+        slides.forEach(slide => {
+            const el = slide.querySelector('.slide-line');
+            if (!el) return;
+            const full = slide.dataset.full, key = slide.dataset.key;
+            if (!full) return;
+            if (mode === 'keywords') {
+                el.classList.add('keywords'); el.classList.remove('guess-mode');
+                el.textContent = key || full;
+            } else if (mode === 'guess') {
+                el.classList.remove('keywords'); el.classList.add('guess-mode');
+                const words = full.split(' ');
+                const keySet = new Set((key||'').toUpperCase().split(/[\s·&]+/).filter(w => w.replace(/[^A-Z]/g,'').length > 2));
+                el.innerHTML = words.map(w => {
+                    const clean = w.replace(/[^a-zA-Z0-9']/g,'').toUpperCase();
+                    if (keySet.has(clean)) {
+                        return '<span style="display:inline-block;border-bottom:3px solid rgba(255,255,255,0.85);min-width:' + Math.max(clean.length*16,36) + 'px;margin:0 3px;vertical-align:bottom;height:1.1em;"></span>';
+                    }
+                    return w;
+                }).join(' ');
+            } else {
+                el.classList.remove('keywords','guess-mode');
+                el.innerHTML = full;
+            }
+        });
+    }
+
+    function changeSlide(dir) {
+        slides[current].classList.remove('active');
+        current = Math.max(0, Math.min(total-1, current+dir));
+        slides[current].classList.add('active');
+        updateNav();
+    }
+
+    function updateNav() {
+        document.getElementById('counter').textContent = (current+1) + ' / ' + total;
+        document.getElementById('prevBtn').disabled = current === 0;
+        document.getElementById('nextBtn').disabled = current === total-1;
+        document.getElementById('progressBar').style.width = ((current+1)/total*100) + '%';
+    }
+
+    let tx = 0;
+    document.addEventListener('touchstart', e => { tx = e.touches[0].clientX; }, {passive:true});
+    document.addEventListener('touchend', e => { const d = tx - e.changedTouches[0].clientX; if (Math.abs(d) > 50) changeSlide(d > 0 ? 1 : -1); });
+    document.addEventListener('keydown', e => {
+        if (e.key==='ArrowRight'||e.key===' ') { e.preventDefault(); changeSlide(1); }
+        if (e.key==='ArrowLeft') { e.preventDefault(); changeSlide(-1); }
+    });
+
+    updateSlideContent();
+</script>
+</body>
+</html>

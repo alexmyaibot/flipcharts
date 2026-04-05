@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <script>if(sessionStorage.getItem('fc_auth')!=='ok'){window.location.href='/flipcharts/login.html';}</script>
+    
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Faith in Every Footstep — Primary Flipchart</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            background: #000;
+            font-family: 'Palatino Linotype', 'Book Antiqua', Palatino, serif;
+            height: 100vh;
+            width: 100vw;
+            overflow: hidden;
+        }
+
+        .aspect-wrapper {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #000;
+        }
+
+        .screen {
+            position: relative;
+            width: min(100vw, 177.78vh);
+            height: min(100vh, 56.25vw);
+            background: linear-gradient(135deg, #0a1628, #1a2f4e);
+            overflow: hidden;
+        }
+
+        .slideshow { width: 100%; height: 100%; position: relative; }
+
+        .slide { display: none; position: absolute; inset: 0; }
+        .slide.active { display: flex; flex-direction: column; }
+
+        .slide-bg {
+            position: absolute; inset: 0;
+            background-size: cover;
+            background-position: center;
+            filter: brightness(0.45);
+            z-index: 0;
+        }
+
+        .slide-content {
+            position: relative; z-index: 1;
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            height: 100%;
+            padding: 40px 60px 100px;
+            text-align: center;
+        }
+
+        .slide-section {
+            font-size: 0.8rem;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            color: rgba(212,175,55,0.7);
+            margin-bottom: 24px;
+        }
+
+        .slide-line {
+            font-size: clamp(1.8rem, 5.5vw, 3.2rem);
+            font-weight: 700;
+            color: #ffffff;
+            line-height: 1.5;
+            text-shadow: 0 3px 25px rgba(0,0,0,0.9), 0 1px 8px rgba(0,0,50,1);
+            max-width: 850px;
+        }
+
+        .slide-line.keywords {
+            font-size: clamp(2.4rem, 8vw, 5rem);
+            color: #ffd93d;
+        }
+
+        .title-main {
+            font-size: clamp(2.5rem, 7vw, 5rem);
+            font-weight: bold;
+            color: #ffffff;
+            text-shadow: 0 4px 30px rgba(0,0,0,0.9);
+            margin-bottom: 16px;
+        }
+        .title-sub {
+            font-size: clamp(1rem, 2.5vw, 1.4rem);
+            color: rgba(255,255,255,0.65);
+            letter-spacing: 2px;
+        }
+
+        /* Nav */
+        .nav {
+            position: fixed; bottom: 0;
+            left: 50%; transform: translateX(-50%);
+            width: min(100vw, 177.78vh);
+            z-index: 100;
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 14px 24px;
+            background: rgba(0,0,0,0.5);
+            backdrop-filter: blur(8px);
+        }
+
+        .nav-btn {
+            background: rgba(255,255,255,0.15);
+            border: 1px solid rgba(255,255,255,0.25);
+            color: white; padding: 10px 32px;
+            border-radius: 30px; font-size: 1.1rem;
+            cursor: pointer; transition: all 0.2s;
+            font-family: Georgia, serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .nav-btn:active { background: rgba(255,255,255,0.35); transform: scale(0.97); }
+        .nav-btn:disabled { opacity: 0.25; cursor: default; }
+        .nav-counter { color: rgba(255,255,255,0.6); font-size: 0.9rem; }
+
+        /* Mode toggle */
+        .mode-toggle {
+            position: fixed; top: 14px;
+            right: calc(50% - min(50vw, 88.89vh) + 14px);
+            z-index: 100; display: flex; gap: 8px;
+        }
+        .mode-btn {
+            background: rgba(0,0,0,0.55);
+            border: 1px solid rgba(255,255,255,0.3);
+            color: white; padding: 7px 16px;
+            border-radius: 20px; font-size: 0.8rem;
+            cursor: pointer; transition: all 0.2s;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .mode-btn.active { background: #d4af37; color: #000; border-color: #d4af37; font-weight: 600; }
+
+        /* Jump nav */
+        .jump-nav {
+            position: fixed; top: 14px;
+            left: calc(50% - min(50vw, 88.89vh) + 14px);
+            z-index: 100; display: flex; gap: 6px;
+        }
+        .jump-btn {
+            background: rgba(0,0,0,0.55);
+            border: 1px solid rgba(255,255,255,0.3);
+            color: white; padding: 7px 12px;
+            border-radius: 20px; font-size: 0.75rem;
+            cursor: pointer; transition: all 0.2s;
+            -webkit-tap-highlight-color: transparent;
+            white-space: nowrap;
+        }
+        .jump-btn:hover { background: rgba(255,255,255,0.2); }
+        .jump-btn.home-btn { background: rgba(212,175,55,0.3); border-color: #d4af37; color: #d4af37; }
+
+        
+        
+
+        /* Photo mode */
+        #slideshow.photo-mode .slide-line,
+        #slideshow.photo-mode .slide-section,
+        #slideshow.photo-mode .title-main,
+        #slideshow.photo-mode .title-sub { opacity: 0 !important; transition: opacity 0.3s; }
+        #slideshow.photo-mode .slide-bg { filter: brightness(0.85) !important; }
+        .progress-bar {
+            position: fixed; top: 0;
+            left: 50%; transform: translateX(-50%);
+            height: 4px; background: #ffd93d;
+            transition: width 0.3s ease; z-index: 200;
+            max-width: min(100vw, 177.78vh);
+        }
+
+        @media (max-width: 768px) {
+            .slide-content { padding: 30px 30px 90px; }
+            .slide-line { font-size: clamp(1.5rem, 6.5vw, 2.5rem); }
+            .nav-btn { padding: 10px 24px; font-size: 1rem; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="progress-bar" id="progressBar"></div>
+
+<div class="jump-nav" id="jumpNav"></div>
+
+<div class="mode-toggle"><button class="mode-btn active" id="modeBtn" onclick="cycleMode()" title="Cycle: Lyrics → Keywords → Photo">📝</button></div>
+
+<div class="aspect-wrapper"><div class="screen"><div class="slideshow" id="slideshow">
+
+    <!-- TITLE -->
+    <div class="slide active" data-type="title">
+        <div class="slide-bg" style="background-image: url('images/title.jpg')"></div>
+        <div class="slide-content">
+            <div class="title-main">Faith in Every Footstep</div>
+            <div class="title-sub">K. Newell Dayley · Primary</div>
+        </div>
+    </div>
+
+    <!-- VERSE 1 -->
+    <div class="slide" data-section="Verse 1" data-full="A marvelous work has begun to come forth" data-key="MARVELOUS WORK">
+        <div class="slide-bg" style="background-image: url('images/verse1a.jpg')"></div>
+        <div class="slide-content"><div class="slide-section">Verse 1</div><div class="slide-line"></div></div>
+    </div>
+
+    <div class="slide" data-section="Verse 1" data-full="Among all the children of men" data-key="CHILDREN OF MEN">
+        <div class="slide-bg" style="background-image: url('images/verse1a.jpg')"></div>
+        <div class="slide-content"><div class="slide-section"></div><div class="slide-line"></div></div>
+    </div>
+
+    <div class="slide" data-section="Verse 1" data-full="O ye that embark in the service of God" data-key="SERVICE OF GOD">
+        <div class="slide-bg" style="background-image: url('images/verse1b.jpg')"></div>
+        <div class="slide-content"><div class="slide-section"></div><div class="slide-line"></div></div>
+    </div>
+
+    <div class="slide" data-section="Verse 1" data-full="Give heart, mind, and strength unto Him" data-key="HEART · MIND · STRENGTH">
+        <div class="slide-bg" style="background-image: url('images/verse1b.jpg')"></div>
+        <div class="slide-content"><div class="slide-section"></div><div class="slide-line"></div></div>
+    </div>
+
+    <div class="slide" data-section="Verse 1" data-full="For prophets have spoken and angels have come" data-key="PROPHETS · ANGELS">
+        <div class="slide-bg" style="background-image: url('images/verse1c.jpg')"></div>
+        <div class="slide-content"><div class="slide-section"></div><div class="slide-line"></div></div>
+    </div>
+
+    <div class="slide" data-section="Verse 1" data-full="To lift the world from sin" data-key="LIFT THE WORLD">
+        <div class="slide-bg" style="background-image: url('images/verse1c.jpg')"></div>
+        <div class="slide-content"><div class="slide-section"></div><div class="slide-line"></div></div>
+    </div>
+
+    <div class="slide" data-section="Verse 1" data-full="That Christ may reign over all the earth" data-key="CHRIST SHALL REIGN">
+        <div class="slide-bg" style="background-image: url('images/verse1d.jpg')"></div>
+        <div class="slide-content"><div class="slide-section"></div><div class="slide-line"></div></div>
+    </div>
+
+    <div class="slide" data-section="Verse 1" data-full="And bless His gathered kin" data-key="GATHERED KIN">
+        <div class="slide-bg" style="background-image: url('images/verse1d.jpg')"></div>
+        <div class="slide-content"><div class="slide-section"></div><div class="slide-line"></div></div>
+    </div>
+
+    <!-- CHORUS -->
+    <div class="slide" data-section="Chorus" data-full="With faith in ev'ry footstep" data-key="FAITH IN EVERY FOOTSTEP">
+        <div class="slide-bg" style="background-image: url('images/chorus-follow.jpg')"></div>
+        <div class="slide-content"><div class="slide-section">Chorus</div><div class="slide-line"></div></div>
+    </div>
+
+    <div class="slide" data-section="Chorus" data-full="We follow Christ, the Lord" data-key="FOLLOW CHRIST">
+        <div class="slide-bg" style="background-image: url('images/chorus-follow.jpg')"></div>
+        <div class="slide-content"><div class="slide-section"></div><div class="slide-line"></div></div>
+    </div>
+
+    <div class="slide" data-section="Chorus" data-full="And filled with hope through His pure love" data-key="HOPE · PURE LOVE">
+        <div class="slide-bg" style="background-image: url('images/chorus-hope.jpg')"></div>
+        <div class="slide-content"><div class="slide-section"></div><div class="slide-line"></div></div>
+    </div>
+
+    <div class="slide" data-section="Chorus" data-full="We sing with one accord" data-key="ONE ACCORD">
+        <div class="slide-bg" style="background-image: url('images/chorus-hope.jpg')"></div>
+        <div class="slide-content"><div class="slide-section"></div><div class="slide-line"></div></div>
+    </div>
+
+    <!-- VERSE 2 -->
+    <div class="slide" data-section="Verse 2" data-full="Those marvelous Saints who embraced this great work" data-key="MARVELOUS SAINTS">
+        <div class="slide-bg" style="background-image: url('images/verse2a.jpg')"></div>
+        <div class="slide-content"><div class="slide-section">Verse 2</div><div class="slide-line"></div></div>
+    </div>
+
+    <div class="slide" data-section="Verse 2" data-full="And shared it in lands far and near" data-key="LANDS FAR & NEAR">
+        <div class="slide-bg" style="background-image: url('images/verse2a.jpg')"></div>
+        <div class="slide-content"><div class="slide-section"></div><div class="slide-line"></div></div>
+    </div>
+
+    <div class="slide" data-section="Verse 2" data-full="Who gave all their heart, mind, and strength to the Lord" data-key="HEART · MIND · STRENGTH">
+        <div class="slide-bg" style="background-image: url('images/verse2b.jpg')"></div>
+        <div class="slide-content"><div class="slide-section"></div><div class="slide-line"></div></div>
+    </div>
+
+    <div class="slide" data-section="Verse 2" data-full="With wisdom and vision so clear" data-key="WISDOM · VISION">
+        <div class="slide-bg" style="background-image: url('images/verse2b.jpg')"></div>
+        <div class="slide-content"><div class="slide-section"></div><div class="slide-line"></div></div>
+    </div>
+
+    <div class="slide" data-section="Verse 2" data-full="Now stand as examples of virtue and faith" data-key="VIRTUE & FAITH">
+        <div class="slide-bg" style="background-image: url('images/verse2c.jpg')"></div>
+        <div class="slide-content"><div class="slide-section"></div><div class="slide-line"></div></div>
+    </div>
+
+    <div class="slide" data-section="Verse 2" data-full="Of souls prepared to hear" data-key="PREPARED TO HEAR">
+        <div class="slide-bg" style="background-image: url('images/verse2c.jpg')"></div>
+        <div class="slide-content"><div class="slide-section"></div><div class="slide-line"></div></div>
+    </div>
+
+    <div class="slide" data-section="Verse 2" data-full="Of knowledge sure, born of humble heart" data-key="HUMBLE HEART">
+        <div class="slide-bg" style="background-image: url('images/verse2d.jpg')"></div>
+        <div class="slide-content"><div class="slide-section"></div><div class="slide-line"></div></div>
+    </div>
+
+    <div class="slide" data-section="Verse 2" data-full="And love that banished fear" data-key="LOVE BANISHED FEAR">
+        <div class="slide-bg" style="background-image: url('images/verse2d.jpg')"></div>
+        <div class="slide-content"><div class="slide-section"></div><div class="slide-line"></div></div>
+    </div>
+
+    <!-- CHORUS 2 -->
+    <div class="slide" data-section="Chorus" data-full="With faith in ev'ry footstep" data-key="FAITH IN EVERY FOOTSTEP">
+        <div class="slide-bg" style="background-image: url('images/chorus-follow.jpg')"></div>
+        <div class="slide-content"><div class="slide-section">Chorus</div><div class="slide-line"></div></div>
+    </div>
+
+    <div class="slide" data-section="Chorus" data-full="We follow Christ, the Lord" data-key="FOLLOW CHRIST">
+        <div class="slide-bg" style="background-image: url('images/chorus-follow.jpg')"></div>
+        <div class="slide-content"><div class="slide-section"></div><div class="slide-line"></div></div>
+    </div>
+
+    <div class="slide" data-section="Chorus" data-full="And filled with hope through His pure love" data-key="HOPE · PURE LOVE">
+        <div class="slide-bg" style="background-image: url('images/chorus-hope.jpg')"></div>
+        <div class="slide-content"><div class="slide-section"></div><div class="slide-line"></div></div>
+    </div>
+
+    <div class="slide" data-section="Chorus" data-full="We sing with one accord" data-key="ONE ACCORD">
+        <div class="slide-bg" style="background-image: url('images/chorus-hope.jpg')"></div>
+        <div class="slide-content"><div class="slide-section"></div><div class="slide-line"></div></div>
+    </div>
+
+    <!-- VERSE 3 -->
+    <div class="slide" data-section="Verse 3" data-full="If we now desire to assist in this work" data-key="ASSIST IN THIS WORK">
+        <div class="slide-bg" style="background-image: url('images/verse3a.jpg')"></div>
+        <div class="slide-content"><div class="slide-section">Verse 3</div><div class="slide-line"></div></div>
+    </div>
+
+    <div class="slide" data-section="Verse 3" data-full="And thrust in our sickle with might" data-key="WITH MIGHT">
+        <div class="slide-bg" style="background-image: url('images/verse3a.jpg')"></div>
+        <div class="slide-content"><div class="slide-section"></div><div class="slide-line"></div></div>
+    </div>
+
+    <div class="slide" data-section="Verse 3" data-full="If we will embark in the service of God" data-key="SERVICE OF GOD">
+        <div class="slide-bg" style="background-image: url('images/verse3b.jpg')"></div>
+        <div class="slide-content"><div class="slide-section"></div><div class="slide-line"></div></div>
+    </div>
+
+    <div class="slide" data-section="Verse 3" data-full="To harvest in fields that are white" data-key="FIELDS OF WHITE">
+        <div class="slide-bg" style="background-image: url('images/verse3b.jpg')"></div>
+        <div class="slide-content"><div class="slide-section"></div><div class="slide-line"></div></div>
+    </div>
+
+    <div class="slide" data-section="Verse 3" data-full="Our souls may receive the salvation of God" data-key="SALVATION OF GOD">
+        <div class="slide-bg" style="background-image: url('images/verse3c.jpg')"></div>
+        <div class="slide-content"><div class="slide-section"></div><div class="slide-line"></div></div>
+    </div>
+
+    <div class="slide" data-section="Verse 3" data-full="The fulness of His light" data-key="FULNESS OF HIS LIGHT">
+        <div class="slide-bg" style="background-image: url('images/verse3c.jpg')"></div>
+        <div class="slide-content"><div class="slide-section"></div><div class="slide-line"></div></div>
+    </div>
+
+    <div class="slide" data-section="Verse 3" data-full="Then we may stand, free of sin and blame" data-key="FREE OF SIN">
+        <div class="slide-bg" style="background-image: url('images/verse3d.jpg')"></div>
+        <div class="slide-content"><div class="slide-section"></div><div class="slide-line"></div></div>
+    </div>
+
+    <div class="slide" data-section="Verse 3" data-full="God's glory in our sight" data-key="GOD'S GLORY">
+        <div class="slide-bg" style="background-image: url('images/verse3d.jpg')"></div>
+        <div class="slide-content"><div class="slide-section"></div><div class="slide-line"></div></div>
+    </div>
+
+    <!-- FINAL CHORUS -->
+    <div class="slide" data-section="Final Chorus" data-full="With faith in ev'ry footstep" data-key="FAITH IN EVERY FOOTSTEP">
+        <div class="slide-bg" style="background-image: url('images/chorus-follow.jpg')"></div>
+        <div class="slide-content"><div class="slide-section">Final Chorus</div><div class="slide-line"></div></div>
+    </div>
+
+    <div class="slide" data-section="Final Chorus" data-full="We follow Christ, the Lord" data-key="FOLLOW CHRIST">
+        <div class="slide-bg" style="background-image: url('images/chorus-follow.jpg')"></div>
+        <div class="slide-content"><div class="slide-section"></div><div class="slide-line"></div></div>
+    </div>
+
+    <div class="slide" data-section="Final Chorus" data-full="And filled with hope through His pure love" data-key="HOPE · PURE LOVE">
+        <div class="slide-bg" style="background-image: url('images/chorus-hope.jpg')"></div>
+        <div class="slide-content"><div class="slide-section"></div><div class="slide-line"></div></div>
+    </div>
+
+    <div class="slide" data-section="Final Chorus" data-full="We sing with one accord" data-key="ONE ACCORD">
+        <div class="slide-bg" style="background-image: url('images/chorus-hope.jpg')"></div>
+        <div class="slide-content"><div class="slide-section"></div><div class="slide-line"></div></div>
+    </div>
+
+</div></div></div>
+
+<div class="nav">
+    <button class="nav-btn" id="prevBtn" onclick="changeSlide(-1)" disabled>← Back</button>
+    <span class="nav-counter" id="counter">1 / 37</span>
+    <button class="nav-btn" id="nextBtn" onclick="changeSlide(1)">Next →</button>
+</div>
+
+<script>
+    let current = 0;
+    let mode = 'full';
+    const slides = document.querySelectorAll('.slide');
+    const total = slides.length;
+
+    
+
+    function updateSlideContent() {
+        slides.forEach(slide => {
+            const el = slide.querySelector('.slide-line');
+            if (!el) return;
+            const full = slide.dataset.full;
+            const key = slide.dataset.key;
+            if (!full) return;
+
+            if (mode === 'full') {
+                el.classList.remove('keywords', 'guess-mode');
+                el.innerHTML = full;
+
+            } else if (mode === 'guess') {
+                // Show FULL lyrics but replace key words with blanks
+                el.classList.remove('keywords');
+                el.classList.add('guess-mode');
+                const keyWords = new Set((key || '').toUpperCase().split(/[\s·]+/).filter(w => w.replace(/[^A-Z]/g,'').length > 2));
+                const fullWords = full.split(' ');
+                el.innerHTML = fullWords.map(w => {
+                    const clean = w.replace(/[^a-zA-Z0-9']/g, '').toUpperCase();
+                    const isKey = keyWords.has(clean);
+                    if (isKey) {
+                        const width = Math.max(clean.length * 16, 40);
+                        return '<span style="display:inline-block;border-bottom:3px solid rgba(255,255,255,0.85);min-width:' + width + 'px;margin:0 3px;vertical-align:bottom;height:1.1em;"></span>';
+                    }
+                    return w;
+                }).join(' ');
+
+            } else if (mode === 'keywords') {
+                el.classList.add('keywords');
+                el.classList.remove('guess-mode');
+                el.textContent = key || full;
+
+            } else {
+                el.classList.remove('keywords', 'guess-mode');
+                el.innerHTML = full;
+            }
+        });
+    }
+
+    function changeSlide(dir) {
+        slides[current].classList.remove('active');
+        current = Math.max(0, Math.min(total - 1, current + dir));
+        slides[current].classList.add('active');
+        updateNav();
+    }
+
+    function changeSlideAbsolute(idx) {
+        slides[current].classList.remove('active');
+        current = idx;
+        slides[current].classList.add('active');
+        updateNav();
+    }
+
+    function updateNav() {
+        document.getElementById('counter').textContent = `${current + 1} / ${total}`;
+        document.getElementById('prevBtn').disabled = current === 0;
+        document.getElementById('nextBtn').disabled = current === total - 1;
+        document.getElementById('progressBar').style.width = `${((current + 1) / total) * 100}%`;
+    }
+
+
+    // ===== MODE CYCLING =====
+    const modeOrder = ['full', 'guess', 'keywords', 'photo'];
+    const modeIcons = {'full': '📝', 'guess': '❓', 'keywords': '🔑', 'photo': '📷'};
+    function cycleMode() {
+        const idx = modeOrder.indexOf(mode);
+        mode = modeOrder[(idx + 1) % modeOrder.length];
+        const btn = document.getElementById('modeBtn');
+        if (btn) { btn.textContent = modeIcons[mode]; btn.classList.toggle('active', true); }
+        document.getElementById('slideshow').classList.toggle('photo-mode', mode === 'photo');
+        updateSlideContent();
+    }
+    
+    function buildJumpNav() {
+        const nav = document.getElementById('jumpNav');
+        const homeBtn = document.createElement('button');
+        homeBtn.className = 'jump-btn home-btn';
+        homeBtn.textContent = '←';
+        homeBtn.onclick = () => changeSlideAbsolute(0);
+        nav.appendChild(homeBtn);
+        const libBtn = document.createElement('button');
+        libBtn.className = 'jump-btn';
+        libBtn.textContent = '🎵';
+        libBtn.onclick = () => window.location.href = '/flipcharts/';
+        nav.appendChild(libBtn);
+    }
+
+    buildJumpNav();
+
+    let touchStartX = 0;
+    document.addEventListener('touchstart', e => { touchStartX = e.touches[0].clientX; }, {passive: true});
+    document.addEventListener('touchend', e => {
+        const diff = touchStartX - e.changedTouches[0].clientX;
+        if (Math.abs(diff) > 50) changeSlide(diff > 0 ? 1 : -1);
+    });
+
+    document.addEventListener('keydown', e => {
+        if (e.key === 'ArrowRight' || e.key === ' ') { e.preventDefault(); changeSlide(1); }
+        if (e.key === 'ArrowLeft') { e.preventDefault(); changeSlide(-1); }
+    });
+
+    updateSlideContent();
+    updateNav();
+</script>
+</body>
+</html>
